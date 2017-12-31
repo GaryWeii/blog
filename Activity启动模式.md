@@ -1,0 +1,43 @@
+# Activity启动模式
+
+说起Activity的启动模式，我们至少需要关注三个东西。
+
+1，lauchMode   
+2 , Intent flag —> Intent.FLAG_ACTIVITY_XXX  
+3,  taskAffinity
+
+另外需要知道系统的三个默认行为，或者说默认值。这个在下面会说到
+
+LauncMode大家比较熟悉，主要有4种类型。
+
+1, standard. 
+2, singleTop
+3, singleTask
+4, singleInstance
+
+其中默认模式是 standard，这是第一个默认行为。
+
+standard模式下，Activity每次start都会加载一个新的实例。
+
+singleTop模式下，当栈顶的activity刚好是start的Activity，那么系统不会创建新的Activity实例，而是复用当前栈顶的实例。singleTask模式下，start一个Activity时，系统会检查有没有该Activity的实例在某个栈中，如果有的话，则将其所处的栈提升至前台，并将此栈中该activity之上的activity全部出栈并销毁，如果不存在该activity，则会根据taskAffinity的值新建一个栈，并在该栈中创建Activity实例。
+
+singleInstance模式与singleTask模式类似，只是该模式下的Activity只会单独的处于一个栈中，该栈是被独占的。
+
+前面singleTask模式中说到，系统可能会根据taskAffinity的值创建一个Activity栈。那么这个taskAffinity我从没设置过，系统怎么办。
+
+这就是第二个默认行为，taskAffinity默认与app包名一致。
+
+taskAffinity也可以自己设置，值是一个字符串。该字符串除了一定要有一个.号，似乎没有其他要求了。
+我们知道，Activity都会处在各个不同的Activity栈中被管理。而activity栈则根据taskAffinity的值来区分。所以，当我们的应用中所有的activity都没有设置taskAffinity时，
+其实所有activity都是处于同一个栈中，即该app包名下的栈中。
+
+最后一个默认行为，被启动的activity默认处在调用startActivity的activity栈中，但是这个只是对standard和singleTop模式来说的。
+也就是说假设我们设置 ActivityA 和ActivityB分别为standard 和 singleTop，并且taskAffinity分别为不同的值。此时我们在ActivityA中调用ActvityB，
+ActivityB并不是运行在ActivityB所设置的taskAffnity的栈中，当然也不一定是处于ActivityA设置的TaskAffinity栈中，而是要看ActivityA实际是处在哪个栈中。
+因为ActivityA也有可能是被别的Activity开启的，所以ActivityA也有可能是处于它被开启的栈中。
+当然，这些都是处于默认行为下的分析。那么我们怎么打破这一默认行为呢？ 我们可以在startActivity时，给Intent设置flag  Intent.setFlag(Intent.FLAG_ACTIVITY_NEW_TASK)。
+这样既是告诉系统，我们不想要默认行为。而是让启动的activity运行到他们应该去的栈中，也就是不在是调用时的栈，而是根据taskAffinity的值来决定。
+
+前面说这个默认行为只是对standard和singleTop来说的，在singleTask与singleInstance模式下，AMS在解析Intent参数和Activity配置时，主动给singleTask以及singleInstance模式加上了Intent.FLAG_ACTIVTITY_NEW_TASK，或者说是该flag下的行为。
+
+
